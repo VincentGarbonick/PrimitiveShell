@@ -26,17 +26,17 @@ bool RUNFLAG = 1;
 struct command 
 {
    // name of the command we parse 
-   string commandName;   
+   char commandName;   
    // vector of arguments
    vector<string> arguments;
 
    void printContents()
    {
-      cout << commandName;
+      cout << "Name: " << commandName << endl;
 
       for(int i = 0; i < arguments.size(); i++)
       {
-         cout << arguments[i] << endl;
+         cout << "Argument " << i <<  " " << arguments[i] << endl;
       }
    }
 };
@@ -44,7 +44,7 @@ struct command
 // function prototypes 
 void printPrompt(void);
 void parseInput(command *);
-
+void commandLookup(command *);
 
 
 // main driver loop
@@ -58,11 +58,13 @@ int main(void)
    while(RUNFLAG)
    {      
       printPrompt();
+      
       parseInput(p_userCommand);
 
-      // userCommand.printContents();
+      //userCommand.printContents();
        
-
+      commandLookup(p_userCommand);
+      
    }
 
    return 0;
@@ -92,7 +94,7 @@ void printPrompt(void)
 void parseInput(command * commandPointer)
 {
    // clear our struct before inputting new data 
-   commandPointer->commandName = " "; // clear out name 
+   commandPointer->commandName = ' '; // clear out name 
    commandPointer->arguments.clear(); // clears out arguments 
 
     
@@ -105,18 +107,93 @@ void parseInput(command * commandPointer)
    char delimiter[]  = " "; // delimter for strok 
    
    token = strtok(userInput, delimiter);
-   cout << token;
-   //commandPointer->commandName = std::format("{}", token);
+
+   // commandPointer->commandName = (token[0]);
+   // check to make sure user input's first part is a character.. if not, replace command with "Z" for error
+   if(string(token).length() > 1)
+   {
+      commandPointer->commandName = 'Z';
+   }
+   else 
+   {
+      commandPointer->commandName = token[0];
+   }
 
    while(token != NULL)
    {
       
       token = strtok(NULL, " ");      
-      //commandPointer->arguments.push_back( std::format("{}", token)  );
+      
+      // make sure there is something in token to push_back
+      if(token)
+      {
+         commandPointer->arguments.push_back(string(token));
+      }
 
    }
 
    return;
+}
+
+// commandLookup uses a large switch-case construct to find the supported commands
+// unsupported commands default to an error
+// unsupported arguments are caught in a try-catch block and output error
+// Input: pointer to command struct
+// Output: 
+void commandLookup(command * userCommand)
+{
+   switch (userCommand->commandName)
+   {
+
+   // error case 
+   case 'Z':
+      cout << "Unsupported command entered, enter \"H\" for help..." << endl;
+      break;
+   
+   case 'H':
+      cout << "Help" << endl;
+      break;
+   
+   case 'C':
+      cout << "Copy" << endl;
+      break;
+
+   case 'D':
+      cout << "Delete File" << endl;
+      break;
+
+   case 'E':
+      cout << "Echo" << endl;
+      break;
+
+   case 'L':
+      cout << "List" << endl;
+      break;
+
+   case 'M':
+      cout << "Make" << endl;
+      break;
+
+   case 'P':
+      cout << "Print" << endl;
+      break;
+
+   case 'Q':
+      cout << "Quit" << endl;
+      break;
+
+   case 'S':
+      cout << "Surf" << endl;
+      break;
+   
+   case 'W':
+      cout << "Wipe" << endl;
+      break;
+
+   default:
+      cout << "Unsupported command entered, enter \"H\" for help..." << endl;
+      break;
+   }
 }
 
 /*
