@@ -10,6 +10,7 @@
 #include <stdio.h>
 #include <vector>
 #include <cstring>
+#include <algorithm> 
 
 // namespace delcarations 
 using std::cin;
@@ -45,7 +46,7 @@ struct command
 void printPrompt(void);
 void parseInput(command *);
 void commandLookup(command *);
-
+void executeCommand(string, vector<string>);
 
 // main driver loop
 int main(void)
@@ -64,7 +65,7 @@ int main(void)
       //userCommand.printContents();
        
       commandLookup(p_userCommand);
-      
+
    }
 
    return 0;
@@ -155,7 +156,9 @@ void commandLookup(command * userCommand)
       break;
    
    case 'C':
-      cout << "Copy" << endl;
+      
+      executeCommand("cp", userCommand->arguments);
+
       break;
 
    case 'D':
@@ -179,7 +182,10 @@ void commandLookup(command * userCommand)
       break;
 
    case 'Q':
-      cout << "Quit" << endl;
+      
+      // set global boolean flag for infinite while loop to be false 
+      RUNFLAG = 0;
+
       break;
 
    case 'S':
@@ -196,6 +202,54 @@ void commandLookup(command * userCommand)
    }
 }
 
+// executes needed command with execvp()
+// Input: Character pointer for command, vector for arguments 
+// Output: Character pointer for arguments
+void executeCommand(string command, vector<string> argumentVector)
+{
+
+   // c string arrays for passing arguments
+   const char * cStringCommand = command.c_str();
+   const char * argv[argumentVector.size()];
+
+   // construct a character array pointer for arguments if we have arguments
+   if(argumentVector.size() > 0)
+   {
+      // character array the size of argument vector
+      // char * const * argv[argumentVector.size()];
+
+      /*
+      vector<const char *> cStringVector;
+      
+      std::transform(argumentVector.begin(), argumentVector.end(), std::back_inserter(cStringVector),
+      [](const string &str){return str.c_str();});
+      */
+
+      // convert command to a cstring 
+
+      // copy vector to cstring array
+      for(int i = 0; i < argumentVector.size(); i++)
+      {
+         argv[i] = argumentVector[i].c_str();
+      }
+      
+      // call execvp, make sure it does not throw an error 
+      
+
+      
+   }
+
+   int errorCode = execvp(cStringCommand, const_cast<char * const *>(argv));
+
+   if(errorCode = -1)
+   {
+      cout << "Invalid arguments" << endl; 
+   }
+
+
+   return;
+}
+
 /*
 sources 
 ===========
@@ -204,4 +258,10 @@ https://www.ibm.com/support/knowledgecenter/en/SSLTBW_2.3.0/com.ibm.zos.v2r3.bpx
 https://www.geeksforgeeks.org/split-a-sentence-into-words-in-cpp/
 https://www.programiz.com/cpp-programming/library-function/cstring/strtok
 https://stackoverflow.com/questions/3889992/how-does-strtok-split-the-string-into-tokens-in-c
+
+https://stackoverflow.com/questions/28575643/using-execvp-in-c-to-copy-files-under-linux
+https://www.google.com/search?q=execvp+manual&oq=execvp+manual&aqs=chrome..69i57j0i22i30l2.2768j0j7&sourceid=chrome&ie=UTF-8
+https://stackoverflow.com/questions/347949/how-to-convert-a-stdstring-to-const-char-or-char
+
+https://stackoverflow.com/questions/47068948/best-practice-to-use-execvp-in-c
 */
