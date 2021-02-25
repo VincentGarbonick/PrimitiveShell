@@ -46,7 +46,7 @@ struct command
 void printPrompt(void);
 void parseInput(command *);
 void commandLookup(command *);
-void executeCommand(string, vector<string>);
+void executeCommand(string, vector<string>, int);
 
 // main driver loop
 int main(void)
@@ -62,7 +62,7 @@ int main(void)
       
       parseInput(p_userCommand);
 
-      //userCommand.printContents();
+      // userCommand.printContents();
        
       commandLookup(p_userCommand);
 
@@ -143,6 +143,18 @@ void parseInput(command * commandPointer)
 // Output: 
 void commandLookup(command * userCommand)
 {
+
+   string testCommand = "echo";
+   string testArg = "piss";
+
+   const char * testCommandCstring[3];
+   
+   testCommandCstring[0]= testCommand.c_str();
+   testCommandCstring[1] = testArg.c_str();
+   testCommandCstring[2] = NULL;
+
+   int errorPee;
+
    switch (userCommand->commandName)
    {
 
@@ -157,7 +169,7 @@ void commandLookup(command * userCommand)
    
    case 'C':
       
-      executeCommand("cp", userCommand->arguments);
+      executeCommand("cp", userCommand->arguments, 2);
 
       break;
 
@@ -166,7 +178,10 @@ void commandLookup(command * userCommand)
       break;
 
    case 'E':
-      cout << "Echo" << endl;
+
+      executeCommand("echo", userCommand->arguments, 1);
+      // execvp(testCommand.c_str(), const_cast<char * const *>(testCommandCstring));
+
       break;
 
    case 'L':
@@ -203,49 +218,61 @@ void commandLookup(command * userCommand)
 }
 
 // executes needed command with execvp()
-// Input: Character pointer for command, vector for arguments 
+// Input: Character pointer for command, vector for arguments, number of arguments expected
 // Output: Character pointer for arguments
-void executeCommand(string command, vector<string> argumentVector)
+void executeCommand(string command, vector<string> argumentVector, int expectedArguments)
 {
 
    // c string arrays for passing arguments
    const char * cStringCommand = command.c_str();
-   const char * argv[argumentVector.size()];
+
+   int errorCode = 0;
 
    // construct a character array pointer for arguments if we have arguments
-   if(argumentVector.size() > 0)
+   if(argumentVector.size() == expectedArguments)
    {
-      // character array the size of argument vector
-      // char * const * argv[argumentVector.size()];
+      // we need our argv to look like as follows 
+      // argv[0] = commandName 
+      // argv[1 - n-1] = arguments 
+      // argv[n] = NULL 
+      const char * argv[argumentVector.size() + 2];
 
-      /*
-      vector<const char *> cStringVector;
-      
-      std::transform(argumentVector.begin(), argumentVector.end(), std::back_inserter(cStringVector),
-      [](const string &str){return str.c_str();});
-      */
-
-      // convert command to a cstring 
-
-      // copy vector to cstring array
-      for(int i = 0; i < argumentVector.size(); i++)
+      // copy vector to cstring array, if expected arguments are greater than 0
+      if(expectedArguments > 0)
       {
-         argv[i] = argumentVector[i].c_str();
-      }
-      
-      // call execvp, make sure it does not throw an error 
-      
+         for(int i = 1; i < argumentVector.size() + 1; i++)
+         {
+            argv[i] = argumentVector[i - 1].c_str();
 
+         }
+      }
+
+      // make sure our argv[0] has name of command
+      argv[0] = command.c_str();
+      argv[argumentVector.size() + 1] = NULL; // need to add this at very end 
+
+      
+      // fork here 
+      
+      
+      errorCode = execvp(cStringCommand, const_cast<char * const *>(argv));
+
+
+
+      cout << errorCode << endl;
       
    }
+   else 
+   {
+      cout << "Invalid number of arguments..." 
+           << command << " requires " << expectedArguments << " arguments..." << endl; 
+   }
 
-   int errorCode = execvp(cStringCommand, const_cast<char * const *>(argv));
-
+   // call execvp, make sure it does not throw an error 
    if(errorCode = -1)
    {
       cout << "Invalid arguments" << endl; 
    }
-
 
    return;
 }
