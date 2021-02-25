@@ -11,6 +11,7 @@
 #include <vector>
 #include <cstring>
 #include <algorithm> 
+#include <wait.h>
 
 // namespace delcarations 
 using std::cin;
@@ -251,15 +252,37 @@ void executeCommand(string command, vector<string> argumentVector, int expectedA
       argv[0] = command.c_str();
       argv[argumentVector.size() + 1] = NULL; // need to add this at very end 
 
-      
-      // fork here 
-      
-      
-      errorCode = execvp(cStringCommand, const_cast<char * const *>(argv));
+      // fork out a child process to execute the execvp call
+      pid_t pid = fork();
+
+      if(pid < 0)
+      {
+         cout << "Fork failed catastrophically" << endl;
+      }
 
 
+      // child process
+      if(pid == 0)
+      {
+         cout << "Child process engaged..." << endl;
 
-      cout << errorCode << endl;
+         // execute command in the fork
+         errorCode = execvp(cStringCommand, const_cast<char * const *>(argv));
+
+         if(errorCode = -1)
+         {
+            cout << "Invalid arguments" << endl; 
+         }
+
+         kill(pid, SIGTERM); // *demonic voice* kill the child 
+      }
+
+      // otherwise this is the parent process 
+      else 
+      {
+         int exitState;
+         pid_t returnedPid = waitpid(pid, &exitState, 0);
+      }
       
    }
    else 
@@ -269,10 +292,7 @@ void executeCommand(string command, vector<string> argumentVector, int expectedA
    }
 
    // call execvp, make sure it does not throw an error 
-   if(errorCode = -1)
-   {
-      cout << "Invalid arguments" << endl; 
-   }
+
 
    return;
 }
@@ -291,4 +311,6 @@ https://www.google.com/search?q=execvp+manual&oq=execvp+manual&aqs=chrome..69i57
 https://stackoverflow.com/questions/347949/how-to-convert-a-stdstring-to-const-char-or-char
 
 https://stackoverflow.com/questions/47068948/best-practice-to-use-execvp-in-c
+
+https://codechacha.com/en/fork-waitpid-and-timeout/
 */
