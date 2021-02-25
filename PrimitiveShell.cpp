@@ -165,7 +165,10 @@ void commandLookup(command * userCommand)
       break;
    
    case 'H':
+
+      // TOOD: this 
       cout << "Help" << endl;
+
       break;
    
    case 'C':
@@ -175,7 +178,9 @@ void commandLookup(command * userCommand)
       break;
 
    case 'D':
-      cout << "Delete File" << endl;
+
+      executeCommand("rm", userCommand->arguments, 1);
+
       break;
 
    case 'E':
@@ -186,15 +191,22 @@ void commandLookup(command * userCommand)
       break;
 
    case 'L':
-      cout << "List" << endl;
+
+      executeCommand("ls", userCommand->arguments, 0);
+      
       break;
 
    case 'M':
-      cout << "Make" << endl;
+
+      // In this house, we use vim. Not nano.
+      executeCommand("vim", userCommand->arguments, 1);
+
       break;
 
    case 'P':
-      cout << "Print" << endl;
+
+      executeCommand("cat", userCommand->arguments, 1);
+
       break;
 
    case 'Q':
@@ -205,11 +217,15 @@ void commandLookup(command * userCommand)
       break;
 
    case 'S':
+
+      // TOOD: this 
       cout << "Surf" << endl;
       break;
    
    case 'W':
-      cout << "Wipe" << endl;
+
+      executeCommand("clear", userCommand->arguments, 0);
+
       break;
 
    default:
@@ -264,8 +280,6 @@ void executeCommand(string command, vector<string> argumentVector, int expectedA
       // child process
       if(pid == 0)
       {
-         cout << "Child process engaged..." << endl;
-
          // execute command in the fork
          errorCode = execvp(cStringCommand, const_cast<char * const *>(argv));
 
@@ -280,7 +294,10 @@ void executeCommand(string command, vector<string> argumentVector, int expectedA
       // otherwise this is the parent process 
       else 
       {
+
          int exitState;
+
+         // wait on the child process to die so we can get back to work
          pid_t returnedPid = waitpid(pid, &exitState, 0);
       }
       
