@@ -1,3 +1,6 @@
+#ifndef DEBUG
+   //#define DEBUG
+#endif
 
 // include that sweet, sweet POSIX library
 #include <unistd.h>
@@ -12,6 +15,8 @@
 #include <cstring>
 #include <algorithm> 
 #include <wait.h>
+
+#define DIVIDER "------------------------------------------\n"
 
 // namespace delcarations 
 using std::cin;
@@ -47,7 +52,8 @@ struct command
 void printPrompt(void);
 void parseInput(command *);
 void commandLookup(command *);
-void executeCommand(string, vector<string>, int);
+void executeCommand(string, vector<string>, int, bool);
+void helpScreen();
 
 // main driver loop
 int main(void)
@@ -145,16 +151,9 @@ void parseInput(command * commandPointer)
 void commandLookup(command * userCommand)
 {
 
-   string testCommand = "echo";
-   string testArg = "piss";
-
-   const char * testCommandCstring[3];
-   
-   testCommandCstring[0]= testCommand.c_str();
-   testCommandCstring[1] = testArg.c_str();
-   testCommandCstring[2] = NULL;
-
-   int errorPee;
+   // vector for firefox arguments, since it is a "unique" command
+   vector<string> listVector;
+   listVector.push_back("-l");
 
    switch (userCommand->commandName)
    {
@@ -166,65 +165,62 @@ void commandLookup(command * userCommand)
    
    case 'H':
 
-      // TOOD: this 
-      cout << "Help" << endl;
+      helpScreen();
 
       break;
    
    case 'C':
       
-      executeCommand("cp", userCommand->arguments, 2);
+      executeCommand("cp", userCommand->arguments, 2, 0);
 
       break;
 
    case 'D':
 
-      executeCommand("rm", userCommand->arguments, 1);
+      executeCommand("rm", userCommand->arguments, 1, 0);
 
       break;
 
    case 'E':
 
-      executeCommand("echo", userCommand->arguments, 1);
-      // execvp(testCommand.c_str(), const_cast<char * const *>(testCommandCstring));
+      executeCommand("echo", userCommand->arguments, 1, 0);
 
       break;
 
    case 'L':
 
-      executeCommand("ls", userCommand->arguments, 0);
+      executeCommand("ls", listVector, 1, 0);
       
       break;
 
    case 'M':
 
       // In this house, we use vim. Not nano.
-      executeCommand("vim", userCommand->arguments, 1);
+      executeCommand("vim", userCommand->arguments, 1, 0);
 
       break;
 
    case 'P':
 
-      executeCommand("cat", userCommand->arguments, 1);
+      executeCommand("cat", userCommand->arguments, 1, 0);
 
       break;
 
    case 'Q':
       
-      // set global boolean flag for infinite while loop to be false 
       RUNFLAG = 0;
 
       break;
 
    case 'S':
 
-      // TOOD: this 
-      cout << "Surf" << endl;
+      executeCommand("firefox", userCommand->arguments, 0, 1);
+
       break;
    
    case 'W':
 
-      executeCommand("clear", userCommand->arguments, 0);
+      executeCommand("clear", userCommand->arguments, 0, 0);
 
       break;
 
@@ -235,10 +231,20 @@ void commandLookup(command * userCommand)
 }
 
 // executes needed command with execvp()
-// Input: Character pointer for command, vector for arguments, number of arguments expected
+// Input: Character pointer for command, vector for arguments, number of arguments expected, isBackground 1 = yes, 0 = no
 // Output: Character pointer for arguments
-void executeCommand(string command, vector<string> argumentVector, int expectedArguments)
+void executeCommand(string command, vector<string> argumentVector, int expectedArguments, bool isBackground)
 {
+ 
+
+
+   /* 
+   =========================================
+   THIS BLOCK OF CODE CONSTRUCTS THE ARGUMENTS TO BE PASSED TO EXECVP
+   =========================================
+   */
+
+
 
    // c string arrays for passing arguments
    const char * cStringCommand = command.c_str();
@@ -280,6 +286,14 @@ void executeCommand(string command, vector<string> argumentVector, int expectedA
       // child process
       if(pid == 0)
       {
+
+         #if defined(DEBUG)
+            if(isBackground == 0)
+            {
+               cout << "Child ID:" << getpid() << " Parent ID: " << getppid() << endl;
+            }
+         #endif
+
          // execute command in the fork
          errorCode = execvp(cStringCommand, const_cast<char * const *>(argv));
 
@@ -287,10 +301,11 @@ void executeCommand(string command, vector<string> argumentVector, int expectedA
          {
             cout << "Invalid arguments" << endl; 
          }
-
+         
+         // in case execVP does not exit 
          kill(pid, SIGTERM); // *demonic voice* kill the child 
-      }
 
+      }
       // otherwise this is the parent process 
       else 
       {
@@ -298,7 +313,16 @@ void executeCommand(string command, vector<string> argumentVector, int expectedA
          int exitState;
 
          // wait on the child process to die so we can get back to work
-         pid_t returnedPid = waitpid(pid, &exitState, 0);
+         pid_t returnedPid;
+         // only wait if the child is not a background process, if it's background, don't bother waiting
+         if(isBackground == 0)
+         {
+            returnedPid = waitpid(pid, &exitState, 0);
+            #if defined(DEBUG)
+               cout << "returned exit state of " << returnedPid << " was " << exitState << endl;
+               cout << "WIFEXITED: " << WIFEXITED(exitState) << " WEXITSTATUS: " << WEXITSTATUS(exitState) << endl;
+            #endif
+         }
       }
       
    }
@@ -308,8 +332,39 @@ void executeCommand(string command, vector<string> argumentVector, int expectedA
            << command << " requires " << expectedArguments << " arguments..." << endl; 
    }
 
-   // call execvp, make sure it does not throw an error 
+   return;
+}
 
+// helpScreen() prints out a help screen for the user
+// Inputs: None 
+// Outputs: Help screen on console 
+void helpScreen()
+{
+   cout << "\n" << "=================================================\n"
+   << "This is a primitive shell application\n"
+   << DIVIDER
+   << "C source, destination: this copies a source file to a destination file\n"
+   << DIVIDER
+   << "D filename: this deletes the file of specified name\n"
+   << DIVIDER
+   << "E comment: this prints off the passed comment to the termina\n"
+   << DIVIDER
+   << "H: displays the help screen\n"
+   << DIVIDER
+   << "L: lists contents in directory\n"
+   << DIVIDER
+   << "M filename: creates a file of chosen name using vim\n"
+   << DIVIDER
+   << "P filename: prints the contents of the filename ot the screen\n"
+   << DIVIDER
+   << "Q: quits the shell\n"
+   << DIVIDER
+   << "S: launches firefox\n"
+   << DIVIDER
+   << "W: wipes the screen\n\n"
+   << "Each command requires the specified number of arguments. More or less arguments\n"
+   << "will cause the command to fail\n"
+   << "=================================================" << endl;
 
    return;
 }
@@ -330,4 +385,6 @@ https://stackoverflow.com/questions/347949/how-to-convert-a-stdstring-to-const-c
 https://stackoverflow.com/questions/47068948/best-practice-to-use-execvp-in-c
 
 https://codechacha.com/en/fork-waitpid-and-timeout/
+
+ps -aux | grep kworker | wc -l
 */
